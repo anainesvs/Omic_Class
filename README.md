@@ -23,6 +23,7 @@ The code assumes that the file `OMIC_DATA.rda` contain the following objects:
 The code below assumes that all the predictors were edited by removing outliers 
 and predictors that did not vary in the sample, transformed if needed, and 
 missing values were imputed.
+
 Patologic N scores the degree of spread to regional lymph nodes at diagnosis. 
     N0: tumor cells absent from regional lymph nodes
     N1: regional lymph node metastasis present; (at some sites: tumor spread to closest or small number of regional lymph nodes)
@@ -31,10 +32,10 @@ Patologic N scores the degree of spread to regional lymph nodes at diagnosis.
 "Cancer staging". National Cancer Institute. Retrieved 4 January 2013.
 
 #### (3) Computing similarity matrices
- Some of the models fitted in the study use similarity matrices of the form G=XX' 
- computed from omics. The following code illustrates how to compute this matrix for 
- gene expression. A similar code could be use to compute a G-matrix for methylation 
- or other omics (see (6)).
+ In this lab we will incorporate omics by incorporating correlated random effects. 
+ For this, we will compute similarity between tumors in the methylation omic set and similarites in GE patterns with matrices of the form G=XX' 
+  computed from omics. The following code illustrates (1) editions necessary to perform before computing the similarity matrices, (2) code to compute this matrix.
+ A similar code could be use to compute a G-matrix for gene expression, microRNA or other omics (see (6)).
  
  ```R 
   load('OMIC_DATA.rda')
