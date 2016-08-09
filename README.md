@@ -1,6 +1,7 @@
-## Integrating multiple Omics for Prediction of BC Survival
+## Integrating multiple Omics for Prediction of BC Outcome
 
-The following scripts illustrate how to fit some of the models presented in *Vazquez et al., Genetics, 2016*, the scripts are also provided at: [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016), please refer to that webpage for updates.
+The following scripts illustrate how to fit G-BLUP models to integrate omics to predict cancer outcomes. 
+A full article is  presented in *Vazquez et al., Genetics, 2016*, the scripts are also provided at: [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
 
 **Contact**: avazquez@msu.edu
 
