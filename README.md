@@ -12,16 +12,23 @@ The code below illustrates how to install and load the necessary package from CR
 ```  
 
 #### (2) Loading data
-**Data**: The code assumes that the user has saved in the file `OMIC_DATA.rda` 
+**Data**: The data can be obtained from NIH/NCI at: [https://gdc-portal.nci.nih.gov]
+The code assumes that the user starts with data in a file `OMIC_DATA_class.rda` 
 the objects that contain the phenotypic information, clinical covariates, and omic data. 
 The code assumes that the file `OMIC_DATA.rda` contain the following objects:
    * `XF`: an incidence matrix for clinical covariates.
    * `Xge`: an incidence matrix for gene expression. 
-   * `Xmt`: an incidence matrix for methylation values at various sites.
-   * `y`: a vector with the response, in this case a 0/1 where 0 denotes alive.
+   * `Xmt`: an incidence matrix for methylation values at various sites of chromosome 21 (only).
+   * `y`: a matrix with an id, pathologic N, time to last follow up and alive status at the last follow up (0: alive, 1:death).
 The code below assumes that all the predictors were edited by removing outliers 
 and predictors that did not vary in the sample, transformed if needed, and 
 missing values were imputed.
+Patologic N scores the degree of spread to regional lymph nodes at diagnosis. 
+    N0: tumor cells absent from regional lymph nodes
+    N1: regional lymph node metastasis present; (at some sites: tumor spread to closest or small number of regional lymph nodes)
+    N2: tumor spread to an extent between N1 and N3 (N2 is not used at all sites)
+    N3: tumor spread to more distant or numerous regional lymph nodes (N3 is not used at all sites)
+"Cancer staging". National Cancer Institute. Retrieved 4 January 2013.
 
 #### (3) Computing similarity matrices
  Some of the models fitted in the study use similarity matrices of the form G=XX' 
