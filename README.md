@@ -21,6 +21,7 @@ The code assumes that the file `OMIC_DATA_class.rda` contain the following objec
    * `Xge`: an incidence matrix for gene expression. 
    * `Xmt`: an incidence matrix for methylation values at various sites of chromosome 21 (only).
    * `y`: a matrix with an id, pathologic N, time to last follow up and alive status at the last follow up (0: alive, 1:death).
+   * `XR`: a numeric vector with batches. 
 The code below assumes that all the predictors were edited by removing outliers 
 and predictors that did not vary in the sample, transformed if needed, and 
 missing values were imputed.
@@ -31,14 +32,14 @@ Race/ethnic group:  latino, african
 Age at diagnosis: age 
 Cancer stage: PatStage 
 Cancer histological type, specifically if the cancer is located in the lobular tissue: is_lobCarc 
-Pathological Tumor stage (indicating tumor size): patT 
-Pathological Nodal status: patN 
+"Cancer staging". National Cancer Institute. Retrieved 4 January 2013.
+
+Response variable: y. In this class we will be using Pathological Nodal status: patN 
 Pathologic N scores the degree of spread to regional lymph nodes at diagnosis. 
     N0: tumor cells absent from regional lymph nodes
     N1: regional lymph node metastasis present; (at some sites: tumor spread to closest or small number of regional lymph nodes)
     N2: tumor spread to an extent between N1 and N3 (N2 is not used at all sites)
     N3: tumor spread to more distant or numerous regional lymph nodes (N3 is not used at all sites)
-"Cancer staging". National Cancer Institute. Retrieved 4 January 2013.
 
 Breast cancer subtypes can be defined with ERp, PRp and HER. 
 The indicator variables showing results of positive status or unknown status (test not run or inconslusive results) are: 
@@ -46,9 +47,9 @@ ERp, ERuk, PRp, PRuk, HER, and HERuk
 We will write the following groups: 
 
 ```R 
-luminal         <- which( (XF[,"ERp"]==1 | XF[,"PRp"]==1) & XF[,"HER"]==0)
-triplenegative  <- which( XF[,"ERp"]==0 & XF[,"PRp"]==0 & XF[,"HER"]==0)
-her2p           <- which( XF[,"HER"]==1)
+luminal         <-  (XF[,"ERp"]==1 | XF[,"PRp"]==1) & XF[,"HER"]==0
+triplenegative  <-  XF[,"ERp"]==0 & XF[,"PRp"]==0 & XF[,"HER"]==0
+her2p           <-  XF[,"HER"]==1
 ```R 
 
 #### (4) Computing similarity matrices
@@ -110,10 +111,57 @@ points(pcGmt$vectors[luminal,1:2], col='red', pch=8)
 ```
 
 Omics can have important batch effects. Assume XR contains the batches where samples were analyzed for Methylation. The number of samples per bach can be seen using `table(XR)`
+Then we look at the distribution of batches on the loading of the PC, and a regression of the batches on the PC 1 to 10. 
+
+ ```R 
+for(i in levels(XR)){
+  plot(pcGmt$vectors[,1:2], xlab='pc1', ylab='pc2', pch=20, col='gray80', cex=0.7)
+  points(pcGmt$vectors[XR==i,1:2], col='red', pch=8)
+  Sys.sleep(1)
+}
+
+for(i in 1:10){print(paste('PC ',i)); print(summary(lm(pcGmt$vectors[,i]~XR)))}
+```
+
+#### (6)  Fitting a linear regression for (the "fixed effects" of) Clinical Coavariates using BGLR (COV)
+The following code illustrates how to use BGLR to fit a fixed effects model. The matrix XF is an incidence matrix for clinical covariates. There is no column for intercept in XF because BGLR adds the intercept automatically. The response variable will be the number of nodes affected and will be assumed continuous. The argument `response_type` is used to indicate to BGLR that the response is gaussian. Predictors are given to BGLR in the form a two-level list. The argument `save_at` can be used to provide a path and a pre-fix to be added to the files saved by BGLR. For further details see [Pérez-Rodriguez and de los Campos, Genetics, 2014](http://www.genetics.org/content/genetics/198/2/483.full.pdf). The code also shows how to retrieve estimates of effects. In the examples below we fit the model using the default number of iterations (1,500) and burn-in (500). In practice longer chains are needed, the user can increase the numbrer of iterations or the burn-in using the arguments `nIter` and `burnIn` of `BGLR`.
+
+```R
+### Inputs
+# centering and scaling the incidence matrix for fixed effects.
+ XFc<- scale(XF, scale=FALSE, center=TRUE) 
+ ETA.COV<-list( COV=list(X=XFc, model='FIXED') )
+# Fitting the model
+ fm=BGLR(y=yNM, ETA=ETA.COV, saveAt='cov_', response_type='gaussian')
+# Retrieving estimates
+ fm$ETA$COV$b      # posterior means of fixed effects
+ fm$ETA$COV$SD.b   # posteriro SD of fixed effects
+# Comparing posterior means of the fixed effects with OLS coefficients estimated with lm() function.
+plot(x=coefficients(lm(yNM~XF))[-1], y=fm$ETA$COV$b , ylab='BGLR posterior means', xlab='lm solutions')
+summary(lm(yNM~XF[,1:5]+triplenegative+luminal))
+```
+
+#### (6)  Fitting a binary regresson to the model above described. 
+The following code illustrates how to use BGLR to fit the same fixed effects model but considering the response as a binary response, now yNM is 0 if there is not nodal metastasis and 1 if there is. 
+```R
+### Inputs
+# generating the binary response variable.
+ table(yNM<- ifelse(yNM==0,0,1))
+ ETA.COV<-list( COV=list(X=XF, model='FIXED') )
+# Fitting the model
+ fm=BGLR(y=yNM, ETA=ETA.COV, saveAt='cov_', response_type='ordinal')
+# Retrieving estimates
+ fm$ETA$COV$b      # posterior means of fixed effects
+ fm$ETA$COV$SD.b   # posteriro SD of fixed effects
+ head(fm$probs)    # estimated probabilities for the 0/1 outcomes.
+```
 
 
-#### (6)  Fitting a binary regression for (the "fixed effects" of) Clinical Coavariates using BGLR (COV)
-The following code illustrates how to use BGLR to fit a fixed effects model. The matrix XF is an incidence matrix for clinical covariates. There is no column for intercept in XF because BGLR adds the intercept automatically. The response variable `y` is assumed to be coded with two lables (e.g., 0/1), the argument `response_type` is used to indicate to BGLR that the response is ordinal (the binary case is a special case with only two levels). Predictors are given to BGLR in the form a two-level list. The argument `save_at` can be used to provide a path and a pre-fix to be added to the files saved by BGLR. For further details see [Pérez-Rodriguez and de los Campos, Genetics, 2014](http://www.genetics.org/content/genetics/198/2/483.full.pdf). The code also shows how to retrieve estimates of effects and of success probabilities. In the examples below we fit the model using the default number of iterations (1,500) and burn-in (500). In practice longer chains are needed, the user can increase the numbrer of iterations or the burn-in using the arguments `nIter` and `burnIn` of `BGLR`.
+
+
+
+
+
 ```R
 ### Inputs
 # centering and scaling the incidence matrix for fixed effects.
@@ -126,7 +174,6 @@ The following code illustrates how to use BGLR to fit a fixed effects model. The
  fm$ETA$COV$SD.b   # posteriro SD of fixed effects
  head(fm$probs)    # estimated probabilities for the 0/1 outcomes.
 ```
-
 #### (5)  Fitting a binary model for fixed effects and whole genome gene expression (GE) using BGLR (COV+GE)
 The following code illustrates how to use BGLR to fit a mixed effects model that accomodates both clinical covariates and whole-genome-gene expression. 
 ```R
