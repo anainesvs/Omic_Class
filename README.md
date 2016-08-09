@@ -12,10 +12,10 @@ The code below illustrates how to install and load the necessary package from CR
 ```  
 
 #### (2) Loading data
-**Data**: The data can be obtained from NIH/NCI at: [https://gdc-portal.nci.nih.gov]
-The code assumes that the user starts with data in a file `OMIC_DATA_class.rda` 
+**Data**: The data can be obtained from NIH/NCI at: [https://gdc-portal.nci.nih.gov]. Download GE and Methylation chromosome 21, and clinical data. 
+The code assumes that the user starts with data organized in a file called: `OMIC_DATA_class.rda` 
 the objects that contain the phenotypic information, clinical covariates, and omic data. 
-The code assumes that the file `OMIC_DATA.rda` contain the following objects:
+The code assumes that the file `OMIC_DATA_class.rda` contain the following objects:
    * `XF`: an incidence matrix for clinical covariates.
    * `Xge`: an incidence matrix for gene expression. 
    * `Xmt`: an incidence matrix for methylation values at various sites of chromosome 21 (only).
@@ -39,16 +39,15 @@ Pathologic N scores the degree of spread to regional lymph nodes at diagnosis.
     N3: tumor spread to more distant or numerous regional lymph nodes (N3 is not used at all sites)
 "Cancer staging". National Cancer Institute. Retrieved 4 January 2013.
 
-
 Breast cancer subtypes can be defined with ERp, PRp and HER. 
 The indicator variables showing results of positive status or unknown status (test not run or inconslusive results) are: 
 ERp, ERuk, PRp, PRuk, HER, and HERuk
 We will write the following groups: 
 
 ```R 
-luminal<-         which( (XF[,"ERp"]==1 | XF[,"PRp"]==1) & XF[,"HER"]==0)
-triplenegative<-  which( XF[,"ERp"]==0 & XF[,"PRp"]==0 & XF[,"HER"]==0)
-her2p <-          which( XF[,"HER"]==1)
+luminal         <- which( (XF[,"ERp"]==1 | XF[,"PRp"]==1) & XF[,"HER"]==0)
+triplenegative  <- which( XF[,"ERp"]==0 & XF[,"PRp"]==0 & XF[,"HER"]==0)
+her2p           <- which( XF[,"HER"]==1)
 ```R 
 
 #### (4) Computing similarity matrices
@@ -94,17 +93,25 @@ any(is.na(Xmt))
 
  ```R 
   #Computing a similarity matrix for gene-expression data
-   Xge<- scale(Xge, scale=TRUE, center=TRUE) #centering and scaling
-   Gge<-tcrossprod(Xge)                      #computing crossproductcts
-   Gge<-Gge/mean(diag(Gge))                  #scales to an average diagonal value of 1.
+   Xge.s<- scale(Xge, scale=TRUE, center=TRUE) #centering and scaling
+   Gge<-tcrossprod(Xge.s)                      #computing crossproductcts
+   Gge<-Gge/mean(diag(Gge))                    #scales to an average diagonal value of 1.
 ```
 **NOTE**: for larger data sets it may be more convinient to use the `getG()` function of the [BGData](https://github.com/quantgen/BGData) R-package. This function allows computing G without loading all the data in RAM and offers methods for multi-core computing. 
 
+#### (5)  Looking at the omic data to have insight of factors affecting its variability.
+Observe PC (derived from methylation) and cancer subtypes. Explore which loading in PC 1 and 2 (PCs from both, methylations sets and gene expression). 
+
+ ```R 
+evGmt<- eigen(Gmt)
+plot(evGmt$vector[,1:2], xlab='PC 1', ylab='PC 2', pch=20, col='gray80', cex=0.7, main='PC 1&2, CpG sites Ch 21, and Luminal Subtypes')
+points(pcGmt$vectors[luminal,1:2], col='red', pch=8)
+```
+
+Omics can have important batch effects. Assume XR contains the batches where samples were analyzed for Methylation. The number of samples per bach can be seen using `table(XR)`
 
 
-
-
-#### (5)  Fitting a binary regression for (the "fixed effects" of) Clinical Coavariates using BGLR (COV)
+#### (6)  Fitting a binary regression for (the "fixed effects" of) Clinical Coavariates using BGLR (COV)
 The following code illustrates how to use BGLR to fit a fixed effects model. The matrix XF is an incidence matrix for clinical covariates. There is no column for intercept in XF because BGLR adds the intercept automatically. The response variable `y` is assumed to be coded with two lables (e.g., 0/1), the argument `response_type` is used to indicate to BGLR that the response is ordinal (the binary case is a special case with only two levels). Predictors are given to BGLR in the form a two-level list. The argument `save_at` can be used to provide a path and a pre-fix to be added to the files saved by BGLR. For further details see [Pérez-Rodriguez and de los Campos, Genetics, 2014](http://www.genetics.org/content/genetics/198/2/483.full.pdf). The code also shows how to retrieve estimates of effects and of success probabilities. In the examples below we fit the model using the default number of iterations (1,500) and burn-in (500). In practice longer chains are needed, the user can increase the numbrer of iterations or the burn-in using the arguments `nIter` and `burnIn` of `BGLR`.
 ```R
 ### Inputs
