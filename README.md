@@ -24,32 +24,46 @@ The code below assumes that all the predictors were edited by removing outliers
 and predictors that did not vary in the sample, transformed if needed, and 
 missing values were imputed.
 
-Patologic N scores the degree of spread to regional lymph nodes at diagnosis. 
+#### (3) Clinical Covariates.
+The following covariates are available: 
+Race/ethnic group:  latino, african 
+Age at diagnosis: age 
+Cancer stage: PatStage 
+Cancer histological type, specifically if the cancer is located in the lobular tissue: is_lobCarc 
+Pathological Tumor stage (indicating tumor size): patT 
+Pathological Nodal status: patN 
+Pathologic N scores the degree of spread to regional lymph nodes at diagnosis. 
     N0: tumor cells absent from regional lymph nodes
     N1: regional lymph node metastasis present; (at some sites: tumor spread to closest or small number of regional lymph nodes)
     N2: tumor spread to an extent between N1 and N3 (N2 is not used at all sites)
     N3: tumor spread to more distant or numerous regional lymph nodes (N3 is not used at all sites)
 "Cancer staging". National Cancer Institute. Retrieved 4 January 2013.
 
-#### (3) Computing similarity matrices
+
+Breast cancer subtypes can be defined with ERp, PRp and HER. 
+The indicator variables showing results of positive status or unknown status (test not run or inconslusive results) are: 
+ERp, ERuk, PRp, PRuk, HER, and HERuk
+We will write the following groups: 
+
+```R 
+luminal<-         which( (XF[,"ERp"]==1 | XF[,"PRp"]==1) & XF[,"HER"]==0)
+triplenegative<-  which( XF[,"ERp"]==0 & XF[,"PRp"]==0 & XF[,"HER"]==0)
+her2p <-          which( XF[,"HER"]==1)
+```R 
+
+#### (4) Computing similarity matrices
  In this lab we will incorporate omics by incorporating correlated random effects. 
- For this, we will compute similarity between tumors in the methylation omic set and similarites in GE patterns with matrices of the form G=XX' 
-  computed from omics. The following code illustrates (1) editions necessary to perform before computing the similarity matrices, (2) code to compute this matrix.
+ For this, we will compute similarity between tumors in the methylation omic set and similarites in GE patterns with matrices of the form G= X * t(X) 
+  computed from omics. The following code illustrates (3.a) editions necessary to perform before computing the similarity matrices, (3.b) code to compute this matrix.
  A similar code could be use to compute a G-matrix for gene expression, microRNA or other omics (see (6)).
  
- (1)  Methylation
-Exploring the methylation data
+ (4.a)  Exploring the methylation data
   1. Look at the data
   2. Study if there are missing values
   3. See if there is methylation sites that are constants
   4. Compute number of missing CpG sites per subject, remove sub >20% missing values
   5. Imputation of missing values
   6. Scale, centering, of distance between subjects (G)
-
-
-
-
-
 
 ```R 
 #1
@@ -74,26 +88,23 @@ any(  (namth/ncol(Xmt)) >0.2 )
 #5 naive imputation imputing mean of the CpG sites
 for(i in 1:ncol(Xmt)){Xmt[,i]<-ifelse(is.na(Xmt[,i]), mean(Xmt[,i],na.rm=TRUE), Xmt[,i])}
 any(is.na(Xmt))
-
-#6. Scale, centering and compute distance between subjects.
-Xmt.s<- scale(Xmt, scale=TRUE, center=TRUE)
-Gmt  <- tcrossprod(Xmt.s)
-Gmt  <- Gmt/mean(diag(Gmt))
 ```
 
-
-
+(4.b)  Look and edit if needed Gene Expression data. The following code shows how to compute a similarity matrix for gene expression, please also do one for methylation called Gmt.
 
  ```R 
   #Computing a similarity matrix for gene-expression data
-   Xge<- scale(Xge, scale=true, center=TRUE) #centering and scaling
+   Xge<- scale(Xge, scale=TRUE, center=TRUE) #centering and scaling
    Gge<-tcrossprod(Xge)                      #computing crossproductcts
    Gge<-Gge/mean(diag(Gge))                  #scales to an average diagonal value of 1.
 ```
 **NOTE**: for larger data sets it may be more convinient to use the `getG()` function of the [BGData](https://github.com/quantgen/BGData) R-package. This function allows computing G without loading all the data in RAM and offers methods for multi-core computing. 
 
 
-#### (4)  Fitting a binary regression for (the "fixed effects" of) Clinical Coavariates using BGLR (COV)
+
+
+
+#### (5)  Fitting a binary regression for (the "fixed effects" of) Clinical Coavariates using BGLR (COV)
 The following code illustrates how to use BGLR to fit a fixed effects model. The matrix XF is an incidence matrix for clinical covariates. There is no column for intercept in XF because BGLR adds the intercept automatically. The response variable `y` is assumed to be coded with two lables (e.g., 0/1), the argument `response_type` is used to indicate to BGLR that the response is ordinal (the binary case is a special case with only two levels). Predictors are given to BGLR in the form a two-level list. The argument `save_at` can be used to provide a path and a pre-fix to be added to the files saved by BGLR. For further details see [Pérez-Rodriguez and de los Campos, Genetics, 2014](http://www.genetics.org/content/genetics/198/2/483.full.pdf). The code also shows how to retrieve estimates of effects and of success probabilities. In the examples below we fit the model using the default number of iterations (1,500) and burn-in (500). In practice longer chains are needed, the user can increase the numbrer of iterations or the burn-in using the arguments `nIter` and `burnIn` of `BGLR`.
 ```R
 ### Inputs
