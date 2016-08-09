@@ -37,8 +37,54 @@ Patologic N scores the degree of spread to regional lymph nodes at diagnosis.
   computed from omics. The following code illustrates (1) editions necessary to perform before computing the similarity matrices, (2) code to compute this matrix.
  A similar code could be use to compute a G-matrix for gene expression, microRNA or other omics (see (6)).
  
+ (1)  Methylation
+Exploring the methylation data
+  1. Look at the data
+  2. Study if there are missing values
+  3. See if there is methylation sites that are constants
+  4. Compute number of missing CpG sites per subject, remove sub >20% missing values
+  5. Imputation of missing values
+  6. Scale, centering, of distance between subjects (G)
+
+
+
+
+
+
+```R 
+#1
+plot(Xmt[,1], type='l', col='gray', ylim=c(0,1))
+for(i in 2:20){ lines(Xmt[,i], type='l', col=sample(1:20)) ; Sys.sleep(1)}
+
+#2
+namth<-sdmth<-numeric(ncol(Xmt))
+for(i in 1:ncol(Xmt)){namth[i]<-sum(is.na(Xmt[,i]))}
+hist(namth)
+
+#3 Rm CpG sites that are constant
+for(i in 1:ncol(Xmt)){sdmth[i]<-sd(Xmt[,i],na.rm=TRUE)} 
+hist(sdmth)
+Xmt<-Xmt[,sdmth>0.01]
+
+#4 identify subjects with problematic assays
+namth<-numeric(nrow(Xmt))
+for(i in 1:nrow(Xmt)){namth[i]<-sum(is.na(Xmt[,i]))}
+any(  (namth/ncol(Xmt)) >0.2 )
+
+#5 naive imputation imputing mean of the CpG sites
+for(i in 1:ncol(Xmt)){Xmt[,i]<-ifelse(is.na(Xmt[,i]), mean(Xmt[,i],na.rm=TRUE), Xmt[,i])}
+any(is.na(Xmt))
+
+#6. Scale, centering and compute distance between subjects.
+Xmt.s<- scale(Xmt, scale=TRUE, center=TRUE)
+Gmt  <- tcrossprod(Xmt.s)
+Gmt  <- Gmt/mean(diag(Gmt))
+```
+
+
+
+
  ```R 
-  load('OMIC_DATA.rda')
   #Computing a similarity matrix for gene-expression data
    Xge<- scale(Xge, scale=true, center=TRUE) #centering and scaling
    Gge<-tcrossprod(Xge)                      #computing crossproductcts
