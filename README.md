@@ -19,7 +19,7 @@ the objects that contain the phenotypic information, clinical covariates, and om
 The code assumes that the file `OMIC_DATA_class.rda` contain the following objects:
    * `XF`: an incidence matrix for clinical covariates.
    * `Xge`: an incidence matrix for gene expression. 
-   * `Xmt`: an incidence matrix for methylation values at various sites of chromosome 21 (only).
+   * `Xmt`: an incidence matrix for methylation values at various sites of chromosome 21 (only, since the full array has 450,000 CpG sites).
    * `y`: a matrix with an id, pathologic N, time to last follow up and alive status at the last follow up (0: alive, 1:death).
    * `XR`: a numeric vector with batches. 
 The code below assumes that all the predictors were edited by removing outliers 
@@ -98,6 +98,8 @@ any(is.na(Xmt))
    Xge.s<- scale(Xge, scale=TRUE, center=TRUE) #centering and scaling
    Gge<-tcrossprod(Xge.s)                      #computing crossproductcts
    Gge<-Gge/mean(diag(Gge))                    #scales to an average diagonal value of 1.
+   plot(Gge[,1])                               #observe Gge
+   Gge[,100]
 ```
 **NOTE**: for larger data sets it may be more convinient to use the `getG()` function of the [BGData](https://github.com/quantgen/BGData) R-package. This function allows computing G without loading all the data in RAM and offers methods for multi-core computing. 
 
@@ -131,6 +133,8 @@ The following code illustrates how to use BGLR to fit a fixed effects model. The
 # centering and scaling the incidence matrix for fixed effects.
  XFc<- scale(XF, scale=FALSE, center=TRUE) 
  ETA.COV<-list( COV=list(X=XFc, model='FIXED') )
+# defining the response variable
+ yNM<-y[,2]
 # Fitting the model
  fm=BGLR(y=yNM, ETA=ETA.COV, saveAt='cov_', response_type='gaussian')
 # Retrieving estimates
@@ -141,46 +145,30 @@ plot(x=coefficients(lm(yNM~XF))[-1], y=fm$ETA$COV$b , ylab='BGLR posterior means
 summary(lm(yNM~XF[,1:5]+triplenegative+luminal))
 ```
 
-#### (6)  Fitting a binary regresson to the model above described. 
+#### (6)  Fitting a binary/ordinal regression to the model above described. 
 The following code illustrates how to use BGLR to fit the same fixed effects model but considering the response as a binary response, now yNM is 0 if there is not nodal metastasis and 1 if there is. 
 ```R
 ### Inputs
 # generating the binary response variable.
- table(yNM<- ifelse(yNM==0,0,1))
- ETA.COV<-list( COV=list(X=XF, model='FIXED') )
-# Fitting the model
- fm=BGLR(y=yNM, ETA=ETA.COV, saveAt='cov_', response_type='ordinal')
+ table(yNM, yNM01<- ifelse(yNM==0,0,1))
+# Fitting a binary model
+ fm01=BGLR(y=yNM01, ETA=ETA.COV, saveAt='cov_', response_type='ordinal')
 # Retrieving estimates
  fm$ETA$COV$b      # posterior means of fixed effects
  fm$ETA$COV$SD.b   # posteriro SD of fixed effects
  head(fm$probs)    # estimated probabilities for the 0/1 outcomes.
+ 
+# Fitting an ordinal model for a response 0,1,2,3
+# fm=BGLR(y=yNM, ETA=ETA.COV, saveAt='cov_', response_type='ordinal')
 ```
 
-
-
-
-
-
-
-```R
-### Inputs
-# centering and scaling the incidence matrix for fixed effects.
- XF<- scale(XF, scale=FALSE, center=TRUE) 
- ETA.COV<-list( COV=list(X=XF, model='FIXED') )
-# Fitting the model
- fm=BGLR(y=y, ETA=ETA.COV, saveAt='cov_', response_type='ordinal')
-# Retrieving estimates
- fm$ETA$COV$b      # posterior means of fixed effects
- fm$ETA$COV$SD.b   # posteriro SD of fixed effects
- head(fm$probs)    # estimated probabilities for the 0/1 outcomes.
-```
-#### (5)  Fitting a binary model for fixed effects and whole genome gene expression (GE) using BGLR (COV+GE)
+#### (7)  Fitting a linear regression model for fixed effects and whole genome gene expression (GE) using BGLR (COV+GE)
 The following code illustrates how to use BGLR to fit a mixed effects model that accomodates both clinical covariates and whole-genome-gene expression. 
 ```R
 # Setting the linear predictor
-  ETA.COV.GE<-list( COV=list(X=XF, model='FIXED'), GE=list(K=Gge, model='RKHS'))
+  ETA.COV.GE<-list( COV=list(X=XFc, model='FIXED'), GE=list(K=Gge, model='RKHS'))
 # Fitting the model
-  fm.COV.GE<- BGLR(y=y, ETA=ETA.COV.GE, response_type='ordinal',saveAt='cov_ge_')
+  fm.COV.GE<- BGLR(y=yNM, ETA=ETA.COV.GE, response_type='gaussian',saveAt='cov_ge_')
 #  Retrieving predictors
   fm.COV.GE$mu            # intercept
   fm.COV.GE$ETA$COV$b     # effects of covariates
@@ -188,15 +176,15 @@ The following code illustrates how to use BGLR to fit a mixed effects model that
   fm.COV.GE$ETA$GE$u      # random effects associated to gene expression
   plot(scan('cov_ge_ETA_GE_varU.dat'),type='o',col=4) # trace plot of variance of GE.
 ```
+
+#### (8)  Covariates+Methylation information.
+Please, fit an ordinal model to the yNM variable (0,1,2,3) for fixed effects covariates and 2 omics (COV+METH)
 **NOTE**: to fit a similar model for COV+METH one just needs to change the inputs in the defintiion of the linear predictor by providing Gmt instead of Gge.
 
-#### (6)  Fitting a binary model for fixed effects covariates and 2 omics (COV+GE+METH)
-The following code shows how to extend the the model `COV+GE` with addition of methylation data.
+#### (9)  The following code demostrates how to extend the model to fixed effects covariates and 2 omics (COV+GE+METH)
+The model `COV+GE` was extended to incorporate methylation data.
 ```R
 #Computing a similarity matrix for methylation data
-Xmt<- scale(Xmt, scale=TRUE, center=TRUE)  #centering and scaling
-Gmt<-tcrossprod(Xmt)                       #computing crossproductcts
-Gmt<-Gmt/mean(diag(Gmt))                   #scales to an average diagonal value of 1.
 ETA.COV.GE.MT<-list( COV=list(X=XF, model='FIXED'),
                      GE=list(K=Gge, model='RKHS'),
                      METH=list(K=Gmt, model='RKHS'))
@@ -205,39 +193,7 @@ fm.COV.GE.MT<- BGLR(y=y, ETA=ETA.COV.GE.MT,
                  response_type='ordinal',saveAt='cov_ge_mt_')
 ```
 
-#### (7)  Fitting a binary model for fixed effects covariates and 2 omics and their interactions (COV+GE+METH+GExMETH)
-The following code shows how to extend the the model `COV+GE+METH` with addition of interactions between gene expression and methylation profiles.
-```R
- G.mg=Gmt*Gge
- G.mg=G.mg/mean(diag(G.mg))
- ETA.COV.GE.MT.GExMT<-list( COV=list(X=XF, model='FIXED'),
-                     GE=list(K=Gge, model='RKHS'),
-                     METH=list(K=Gmt, model='RKHS'),
-                     GExMETH=list(K=G.mg, model='RKHS'))
-# Fitting models 
-fm.COV.GE.MT.GExMT<- BGLR(y=y, ETA=ETA.COV.GE.MT.GExMT, 
-                 response_type='ordinal',saveAt='cov_ge_mt_gexmt')
-```
+#### Other extensions
+Code to model omic by omic interactions, and validation to evaluate prediction accuracy are provided for a similar example at 
+[https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
 
-#### (8) Validation
-The following illustrates how to select a validation set using the model `COV` as example.
-```R
-#Installing and loading library pROC to compute Area Under the ROC Curve.
-install.packages(pkg='pROC')    # install pROC
-library(pROC);
-n <- length(y)
-  # Randomly select a 20% of the data to be the testing set 
-tst<- runif(n) <0.2
-yNA = y; yNA[tst] <-NA
-  # Fit the model only in the training set
-fm.COVtr<- BGLR(y=yNA, ETA=ETA.COV, response_type='ordinal')
-  # Find probability of survival for the testing set
-pred <-fm.COVtr$probs[tst,2]
-  # Estimate AUC
-AUC_train<-auc(y[!tst],fm.COVtr$yHat[!tst])
-AUC_test<-auc(y[tst], pred)
-#For the first individual, area under the standard normal curve (CDF) 
-#of estimated y from full model:
-pnorm(fm.COVtr$yHat[1])
-```
-**NOTE**: if sample size is small (like TCGA data) and uneven in the number of 1s and 0s it will be wise to randomize 1s and 0s to be part of the testing sets, and repeate the validation multiple times. In Vazquez et al., 2016 (Genetics) we implement 200 cross-validations.
