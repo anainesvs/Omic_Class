@@ -1,7 +1,7 @@
 ## Integrating multiple Omics for Prediction of BC Outcome
 
-The following scripts illustrate how to fit G-BLUP models to integrate omics to predict cancer outcomes. 
-A full article is  presented in *Vazquez et al., Genetics, 2016*, the scripts are also provided at: [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
+The following scripts illustrate how to fit shrinkage and variable selection models to integrate omics. 
+A full article using omic extended models is  presented in *Vazquez et al., Genetics, 2016*, the scripts used in the article are also provided at: [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
 
 **Contact**: avazquez@msu.edu
 
@@ -41,16 +41,8 @@ Pathologic N scores the degree of spread to regional lymph nodes at diagnosis.
     N2: tumor spread to an extent between N1 and N3 (N2 is not used at all sites)
     N3: tumor spread to more distant or numerous regional lymph nodes (N3 is not used at all sites)
 
-Breast cancer subtypes can be defined with ERp, PRp and HER. 
-The indicator variables showing results of positive status or unknown status (test not run or inconslusive results) are: 
-ERp, ERuk, PRp, PRuk, HER, and HERuk
-We will write the following groups: 
-
-```R 
-luminal         <-  (XF[,"ERp"]==1 | XF[,"PRp"]==1) & XF[,"HER"]==0
-triplenegative  <-  XF[,"ERp"]==0 & XF[,"PRp"]==0 & XF[,"HER"]==0
-her2p           <-  XF[,"HER"]==1
-```R 
+Breast cancer subtypes can be defined as luminal types, Her2+ and Triple Negatives based on histochemstry tests. 
+The last three columns of XF contain indicator variables showing the cancer subtype of each tumor.  
 
 #### (4) Computing similarity matrices
  In this lab we will incorporate omics by incorporating correlated random effects. 
