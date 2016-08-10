@@ -215,10 +215,16 @@ ETA.COV.GE.MT<-list( COV=  list(X=XF, model='FIXED'),
                      GE=   list(K=Gge, model='RKHS'),
                      METH= list(K=Gmt, model='RKHS'))
 # Fitting models 
-fm.COV.GE.MT<- BGLR(y=y, ETA=ETA.COV.GE.MT, 
+fm.COV.GE.MT<- BGLR(y=yNM, ETA=ETA.COV.GE.MT, 
                  response_type='ordinal',saveAt='cov_ge_mt_')
 ```
+Now, two random effects one for each omics were adjusted: 
 
+```R
+# Retrieving variances
+  fm.COV.GE.MT$ETA$Methyl$varU
+  fm.COV.GE.MT$ETA$GE$varU
+  ```
 #### Extensions
 Code to model omic by omic interactions, and validation to evaluate prediction accuracy are provided for a similar example at 
 [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
