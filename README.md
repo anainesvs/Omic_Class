@@ -104,7 +104,7 @@ plot(evGmt$vector[,1:2], xlab='PC 1', ylab='PC 2', pch=20, col='gray80', cex=0.7
 points(evGmt$vectors[XF[, "Luminal"] == 1,1:2], col='red', pch=8)
 ```
 
-Omics can have important batch effects. Assume XR contains the batches where samples were analyzed for Methylation. The number of samples per bach can be seen using `table(XR)`
+Omics can have important batch effects. Assume MB contains the batches where samples were analyzed for Methylation. The number of samples per bach can be seen using `table(MB)`
 Then we look at the distribution of batches on the loading of the PC, and a regression of the batches on the PC 1 to 10. After this analysis we could consider the batch as a random effect in the model.
 
  ```R 
