@@ -213,10 +213,10 @@ The model `COV+GE` was extended to incorporate methylation data.
 #Computing a similarity matrix for methylation data
 ETA.COV.GE.MT<-list( COV=  list(X=XF, model='FIXED'),
                      GE=   list(K=Gge, model='RKHS'),
-                     METH= list(K=Gmt, model='RKHS'))
+                     Methyl= list(K=Gmt, model='RKHS'))
 # Fitting models 
 fm.COV.GE.MT<- BGLR(y=yNM, ETA=ETA.COV.GE.MT, 
-                 response_type='ordinal',saveAt='cov_ge_mt_')
+                 response_type='gaussian',saveAt='cov_ge_mt_')
 ```
 Now, two random effects one for each omics were adjusted: 
 
@@ -224,6 +224,9 @@ Now, two random effects one for each omics were adjusted:
 # Retrieving variances
   fm.COV.GE.MT$ETA$Methyl$varU
   fm.COV.GE.MT$ETA$GE$varU
+  fm.COV.GE.MT$varE
+  
+  fm.COV.GE.MT$ETA$Methyl$varU / (fm.COV.GE.MT$ETA$GE$varU+fm.COV.GE.MT$ETA$Methyl$varU+fm.COV.GE.MT$varE)
   ```
 #### Extensions
 Code to model omic by omic interactions, and validation to evaluate prediction accuracy are provided for a similar example at 
