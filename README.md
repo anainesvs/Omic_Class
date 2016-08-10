@@ -105,7 +105,7 @@ points(pcGmt$vectors[luminal,1:2], col='red', pch=8)
 ```
 
 Omics can have important batch effects. Assume XR contains the batches where samples were analyzed for Methylation. The number of samples per bach can be seen using `table(XR)`
-Then we look at the distribution of batches on the loading of the PC, and a regression of the batches on the PC 1 to 10. 
+Then we look at the distribution of batches on the loading of the PC, and a regression of the batches on the PC 1 to 10. After this analysis we could consider the batch as a random effect in the model.
 
  ```R 
 for(i in levels(XR)){
@@ -154,38 +154,59 @@ The following code illustrates how to use BGLR to fit the same fixed effects mod
 # fm=BGLR(y=yNM, ETA=ETA.COV, saveAt='cov_', response_type='ordinal')
 ```
 
-#### (7)  Fitting a linear regression model for fixed effects and whole genome gene expression (GE) using BGLR (COV+GE)
-The following code illustrates how to use BGLR to fit a mixed effects model that accomodates both clinical covariates and whole-genome-gene expression. 
+#### (7)  Fitting a linear regression model for fixed effects and whole genome methylation (Metyl) using BGLR (COV+Metyl)
+The following code illustrates how to use BGLR to fit a mixed effects model that accomodates both clinical covariates and whole-genome-methylation. 
 ```R
 # Setting the linear predictor
-  ETA.COV.GE<-list( COV=list(X=XFc, model='FIXED'), GE=list(K=Gge, model='RKHS'))
+  ETA.COV.Methyl<-list( COV=list(X=XFc, model='FIXED'), Methyl=list(K=Gmt, model='RKHS'))
 # Fitting the model
-  fm.COV.GE<- BGLR(y=yNM, ETA=ETA.COV.GE, response_type='gaussian',saveAt='cov_ge_')
+  fm.COV.Methyl<- BGLR(y=yNM, ETA=ETA.COV.Methyl, response_type='gaussian',saveAt='cov_mt_')
 #  Retrieving predictors
-  fm.COV.GE$mu            # intercept
-  fm.COV.GE$ETA$COV$b     # effects of covariates
-  fm$COV.GE$ETA$GE$varU   # variance associated to GE SD.varU gives posterior SD
-  fm.COV.GE$ETA$GE$u      # random effects associated to gene expression
-  plot(scan('cov_ge_ETA_GE_varU.dat'),type='o',col=4) # trace plot of variance of GE.
+  fm.COV.Methyl$mu            # intercept
+  fm.COV.Methyl$ETA$COV$b     # effects of covariates
+  fm.COV.Methyl$ETA$Methyl$varU   # variance associated to methylation SD.varU gives posterior SD
+  fm.COV.Methyl$ETA$Methyl$u      # random effects associated to gene expression
+  plot(scan('cov_mt_ETA_Methyl_varU.dat'),type='o',col=4) # trace plot of variance of methylation in chromosome 21.
 ```
 
-#### (8)  Covariates+Methylation information.
-Please, fit an ordinal model to the yNM variable (0,1,2,3) for fixed effects covariates and 2 omics (COV+METH)
-**NOTE**: to fit a similar model for COV+METH one just needs to change the inputs in the defintiion of the linear predictor by providing Gmt instead of Gge.
+#### (8)  Covariates+Gene Expression information.
+Please, fit an ordinal model to the yNM variable (0,1,2,3) for fixed effects covariates and gene expression (COV+GE)
+**NOTE**: to fit a similar model for COV+GE one just needs to change the inputs in the defintiion of the linear predictor by providing Gge instead of Gmt.
 
-#### (9)  The following code demostrates how to extend the model to fixed effects covariates and 2 omics (COV+GE+METH)
+### (9)
+The model above is not accounting for batch, thus we can either pre-correct GE and methylation by batch effects or we can incorporate batches to the model. Next there is an example in how to incorporate batches of methylation in the model:
+```R
+# Setting the linear predictor
+  ETA.COV.Methyl<-list( COV=  list(X=XFc, model='FIXED'), 
+                        Batch=list(~factor(MB), model='BRR'),
+                        Methyl=list(K=Gmt, model='RKHS')
+                       )
+# Fitting the model
+  fm.COV.Methyl<- BGLR(y=yNM, ETA=ETA.COV.Methyl, response_type='gaussian',saveAt='cov_mt_')
+#  Retrieving predictors
+  fm.COV.Methyl$mu            # intercept
+  fm.COV.Methyl$ETA$COV$b     # effects of covariates
+  fm.COV.Methyl$ETA$Methyl$varU   # variance associated to Methyl SD.varU gives posterior SD
+  fm.COV.Methyl$ETA$Methyl$u      # random effects associated to methylation
+  plot(scan('cov_mt_ETA_Methyl_varU.dat'),type='o',col=4) # trace plot of variance of the methylation sites at chromosome 21.
+  fm.COV.Methyl$ETA$Batch$varB    #v ariance of the batches and batch effects     
+  fm.COV.Methyl$ETA$Batch$b
+```
+
+#### (10)  The following code demostrates how to extend the model to fixed effects covariates and 2 omics (COV+GE+METH)
 The model `COV+GE` was extended to incorporate methylation data.
 ```R
 #Computing a similarity matrix for methylation data
-ETA.COV.GE.MT<-list( COV=list(X=XF, model='FIXED'),
-                     GE=list(K=Gge, model='RKHS'),
-                     METH=list(K=Gmt, model='RKHS'))
+ETA.COV.GE.MT<-list( COV=  list(X=XF, model='FIXED'),
+                     GE=   list(K=Gge, model='RKHS'),
+                     METH= list(K=Gmt, model='RKHS'))
 # Fitting models 
 fm.COV.GE.MT<- BGLR(y=y, ETA=ETA.COV.GE.MT, 
                  response_type='ordinal',saveAt='cov_ge_mt_')
 ```
 
-#### Other extensions
+#### Extensions
 Code to model omic by omic interactions, and validation to evaluate prediction accuracy are provided for a similar example at 
 [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
+Omic by a systematic effect interaction (e.g. omic by treatment) can also be accomodated. See: Gonzalez et al., 2016 submitted. 
 
