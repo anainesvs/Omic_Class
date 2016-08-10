@@ -233,3 +233,12 @@ Code to model omic by omic interactions, and validation to evaluate prediction a
 [https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016](https://github.com/anainesvs/VAZQUEZ_etal_GENETICS_2016).
 Omic by a systematic effect interaction (e.g. omic by treatment) can also be accomodated. See: Gonzalez et al., 2016 submitted. 
 
+#### Homework
+The following list of genes is in a comercial array to determine survival time in cancer:
+ "AURKA|6790" , "BAG1|573"     "BCL2|596"     "BIRC5|332"    "CCNB1|891"    "CD68|968"     "CTSL2|1515"   "ERBB2|2064" 
+ "ESR1|2099"    "GAPDH|2597"   "GRB7|2886"    "GSTM1|2944"   "GUSB|2990"    "MKI67|4288"   "MMP11|4320"   "MYBL2|4605"  
+ "PGR|5241"     "POTEF|728378" "SCUBE2|57758" "TFRC|7037" 
+ 1) Identify which ones of them are in our gene expression edited data.
+ 2) estimate how much variance is associated to only these genes and how much is associated to the whole geneme gene expression (for the yNM response variable).
+ 3) Run Bayes B in all the gene expression variable and show what is the effect on the oncogenes flaged genes.
+ 
