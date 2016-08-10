@@ -176,6 +176,20 @@ Please, fit an ordinal model to the yNM variable (0,1,2,3) for fixed effects cov
 ### (9)
 The model above is not accounting for batch, thus we can either pre-correct GE and methylation by batch effects or we can incorporate batches to the model. Next there is an example in how to incorporate batches of methylation in the model:
 ```R
+# Setting up an incidence matrix to relate samples to batches.
+XR<- model.matrix(y[,2]~MB)[, -1]
+# Setting the linear predictor
+  ETA.COV.Methyl<-list( COV=  list(X=XFc, model='FIXED'), 
+                        Batch=list(X=XR, model='BRR'),
+                        Methyl=list(K=Gmt, model='RKHS')
+                       )
+                       # Fitting the model
+  fm.COV.Methyl<- BGLR(y=yNM, ETA=ETA.COV.Methyl, response_type='gaussian',saveAt='cov_mt_')
+
+```
+
+This can also be done automatically within BGLR, as follows:.
+```R
 # Setting the linear predictor
   ETA.COV.Methyl<-list( COV=  list(X=XFc, model='FIXED'), 
                         Batch=list(~factor(MB), model='BRR'),
