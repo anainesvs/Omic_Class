@@ -100,15 +100,16 @@ Observe PC (derived from methylation) and cancer subtypes. Explore which loading
 
  ```R 
 evGmt<- eigen(Gmt)
-plot(evGmt$vector[,1:2], xlab='PC 1', ylab='PC 2', pch=20, col='gray80', cex=0.7, main='PC 1&2, CpG sites Ch 21, and Luminal Subtypes')
-points(pcGmt$vectors[luminal,1:2], col='red', pch=8)
+plot(evGmt$vector[,1:2], xlab='PC 1', ylab='PC 2', pch=20, col='gray80', cex=0.7, 
+      main='PC 1&2 CpG and TN Subtypes')
+points(evGmt$vectors[XF[,8]==1,1:2], col='red', pch=8)
 ```
 
 Omics can have important batch effects. Assume XR contains the batches where samples were analyzed for Methylation. The number of samples per bach can be seen using `table(XR)`
 Then we look at the distribution of batches on the loading of the PC, and a regression of the batches on the PC 1 to 10. After this analysis we could consider the batch as a random effect in the model.
 
  ```R 
-for(i in levels(XR)){
+for(i in levels(MB)){
   plot(pcGmt$vectors[,1:2], xlab='pc1', ylab='pc2', pch=20, col='gray80', cex=0.7)
   points(pcGmt$vectors[XR==i,1:2], col='red', pch=8)
   Sys.sleep(1)
