@@ -21,7 +21,7 @@ The code assumes that the file `OMIC_DATA_class.rda` contain the following objec
    * `Xge`: an incidence matrix for gene expression. 
    * `Xmt`: an incidence matrix for methylation values at various sites of chromosome 21 (only, since the full array has 450,000 CpG sites).
    * `y`: a matrix with an id, pathologic N, time to last follow up and alive status at the last follow up (0: alive, 1:death).
-   * `XR`: a numeric vector with batches. 
+   * `MB`: a numeric vector with batches. 
 The code below assumes that all the predictors were edited by removing outliers 
 and predictors that did not vary in the sample, transformed if needed, and 
 missing values were imputed.
